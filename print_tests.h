@@ -4,7 +4,7 @@
 #include <ctime>
 
 void printUsage();
-size_t strToInt(const char *str);
+size_t strToUInt(const char *str);
 
 //
 // Templated tests for c and c++ style printing

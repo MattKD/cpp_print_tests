@@ -33,13 +33,13 @@ int main(int argc, char *argv[])
       } else if (strcmp(argv[i], "-use-setvbuf") == 0) {
         use_setvbuf_stdout = true;
       } else if (strcmp(argv[i], "-console") == 0 && i+1 < argc) {
-        stdout_test_iters = strToInt(argv[++i]);
+        stdout_test_iters = strToUInt(argv[++i]);
       } else if (strcmp(argv[i], "-string") == 0 && i+1 < argc) {
-        string_test_iters = strToInt(argv[++i]);
+        string_test_iters = strToUInt(argv[++i]);
       } else if (strcmp(argv[i], "-file") == 0 && i+1 < argc) {
-        file_test_iters = strToInt(argv[++i]);
+        file_test_iters = strToUInt(argv[++i]);
       } else if (strcmp(argv[i], "-rerun") == 0 && i+1 < argc) {
-        test_iters += strToInt(argv[++i]);
+        test_iters += strToUInt(argv[++i]);
       } else {
         printf("Error: Invalid option '%s'\n", argv[i]);
         printUsage();
@@ -208,13 +208,10 @@ void printUsage()
          "\tDefault is 0.\n");
 }
 
-size_t strToInt(const char *str)
+size_t strToUInt(const char *str)
 {
   char *str_end = nullptr; // for detecting errors in strtol
-  int n = strtol(str, &str_end, 10);
-  if (n < 0) {
-    throw std::runtime_error("Error: Negative number entered.");
-  }
+  size_t n = strtoul(str, &str_end, 10);
   if (errno == ERANGE){
     errno = 0;
     throw std::runtime_error("Error: Number entered is too large.");
