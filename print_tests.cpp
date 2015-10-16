@@ -211,7 +211,10 @@ void printUsage()
 size_t strToUInt(const char *str)
 {
   char *str_end = nullptr; // for detecting errors in strtol
-  size_t n = strtoul(str, &str_end, 10);
+  int n = strtol(str, &str_end, 10);
+  if (n < 0) {
+    throw std::runtime_error("Error: Negative number entered.");
+  }
   if (errno == ERANGE){
     errno = 0;
     throw std::runtime_error("Error: Number entered is too large.");
