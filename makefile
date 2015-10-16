@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -pedantic -std=c++14 -O3
+CFLAGS = -Wall -pedantic -std=c++14 -O2
 
 ODIR = obj
 _OBJ = print_tests.o console_tests.o file_tests.o string_tests.o
