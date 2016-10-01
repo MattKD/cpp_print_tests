@@ -55,6 +55,29 @@ double cppStyleTest(OutStream &os, size_t iterations)
   return duration;
 }
 
+template <typename PrintFunc>
+double KameUtilPrintStyleTest(PrintFunc &func, size_t iterations)
+{
+  const char *str = "world";
+  const char *str2 = "happy";
+  int x = 10, y = 20;
+  double a = 17, b = 3;
+  clock_t start = clock(); 
+
+  for (size_t i = 0; i < iterations; ++i) {
+    func("blah blah blah\n");
+    func("hello number {}!\n", x);
+    func("{} + {} = {}\n", x, y, x + y);
+    func("hello {}! Are you {} today? Pos = ({}, {})\n", str, str2, x, y);
+    func("{}{}{}{}{}{}{}\n", x, y, 3, 2, 1, a * b, a / b);
+  }
+
+  clock_t end = clock(); 
+  double duration = 1000.0 * (end-start) / CLOCKS_PER_SEC;
+  return duration;
+}
+
+
 typedef double (*TestFunc)(size_t iterations);
 typedef double (*FileTestFunc)(size_t iterations, char *buff, size_t buff_size);
 

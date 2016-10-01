@@ -1,5 +1,6 @@
 #include "print_tests.h"
 #include "template_fprintf.h"
+#include "KameUtil/print.h"
 #include <cstdio>
 #include <iostream>
 
@@ -46,6 +47,25 @@ double templateCppPrintfTest(size_t iterations)
   FPrintfFunctor<CoutFwd> os(CoutFwd{});
   return printfStyleTest(os, iterations);
 }
+
+namespace {
+
+struct KameUtilPrintFwd {
+  template <class ...Args>
+  void operator()(Args &&...args)
+  {
+    KameUtil::print(std::forward<Args>(args)...);
+  }
+};
+
+}
+
+double KameUtilPrintTest(size_t iterations)
+{
+  KameUtilPrintFwd func;
+  return KameUtilPrintStyleTest(func, iterations);
+}
+
 
 
 

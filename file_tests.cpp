@@ -1,5 +1,6 @@
 #include "print_tests.h"
 #include "template_fprintf.h"
+#include "KameUtil/fprint.h"
 #include <cstdio>
 #include <cstring>
 #include <fstream>
@@ -322,7 +323,8 @@ double templateFPrintfTest(size_t iterations, char *buff, size_t buff_size)
 }
 
 // Tests templated Fprintf using ofstream
-double templateCppFPrintfTest(size_t iterations, char *buff, size_t buff_size)
+double templateCppFPrintfTest(size_t iterations, char *buff, 
+                              size_t buff_size)
 {
   std::ofstream fout("test.out");
   if (buff)
@@ -331,3 +333,29 @@ double templateCppFPrintfTest(size_t iterations, char *buff, size_t buff_size)
   return printfStyleTest(func, iterations);
 }
 
+namespace {
+
+struct KameUtilFPrintFwd {
+  KameUtilFPrintFwd(std::ofstream fout) : fout{std::move(fout)} { }
+
+  template <class ...Args>
+  void operator()(Args &&...args)
+  {
+    KameUtil::fprint(fout, std::forward<Args>(args)...);
+  }
+
+  std::ofstream fout;
+};
+
+}
+
+// Tests KameUtil::fprint
+double KameUtilFPrintTest(size_t iterations, char *buff, 
+                          size_t buff_size)
+{
+  std::ofstream fout("test.out");
+  if (buff)
+    fout.rdbuf()->pubsetbuf(buff, buff_size);
+  KameUtilFPrintFwd func(std::move(fout));
+  return KameUtilPrintStyleTest(func, iterations);
+}

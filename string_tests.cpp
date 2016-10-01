@@ -1,6 +1,7 @@
 #include "string.h"
 #include "template_fprintf.h"
 #include "print_tests.h"
+#include "KameUtil/sprint.h"
 #include <cstring>
 #include <sstream>
 
@@ -150,3 +151,24 @@ double templateHeapSprintfTest(size_t iterations)
   return printfStyleTest(fpf, iterations);
 }
 
+
+namespace {
+
+struct KameUtilSPrintFwd {
+  template <class ...Args>
+  void operator()(Args &&...args)
+  {
+    KameUtil::sprint(ss, std::forward<Args>(args)...);
+  }
+
+  std::stringstream ss;
+};
+
+}
+
+// Tests KameUtil::fprint
+double KameUtilSPrintTest(size_t iterations)
+{
+  KameUtilSPrintFwd func;
+  return KameUtilPrintStyleTest(func, iterations);
+}

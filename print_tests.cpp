@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
     Test(coutTest, stdout_test_iters, "cout"),
     Test(templatePrintfTest, stdout_test_iters, "template printf"),
     Test(templateCppPrintfTest, stdout_test_iters, "template cpp printf"),
+    Test(KameUtilPrintTest, stdout_test_iters, "KameUtil::print"),
   };
 
   Test string_tests[] = {
@@ -70,7 +71,8 @@ int main(int argc, char *argv[])
     Test(templateSprintfTest, string_test_iters, "template sprintf"),
     Test(heapSprintfTest, string_test_iters, "heap sprintf"),
     Test(ostringstreamTest, string_test_iters, "ostringstream"),
-    Test(templateHeapSprintfTest, string_test_iters, "template heap sprintf")
+    Test(templateHeapSprintfTest, string_test_iters, "template heap sprintf"),
+    Test(KameUtilSPrintTest, string_test_iters, "KameUtil::sprint")
   };
 
 
@@ -84,6 +86,7 @@ int main(int argc, char *argv[])
              "buffered (formatted) ofstream write"), 
     FileTest(templateFPrintfTest, file_test_iters, "template fprintf"),
     FileTest(templateCppFPrintfTest, file_test_iters, "template cpp fprintf"), 
+    FileTest(KameUtilFPrintTest, file_test_iters, "KameUtil::fprint"),
     // binary file tests
     FileTest(binary_fwriteTest, file_test_iters, "binary fwrite"),
     FileTest(bufferedBinary_fwriteTest, file_test_iters,
@@ -109,6 +112,8 @@ int main(int argc, char *argv[])
              file_test_iters,"template fprintf"),
     FileTest({templateCppFPrintfTest, file_buff, file_buff_size},  
              file_test_iters,"template cpp fprintf"), 
+    FileTest({KameUtilFPrintTest, file_buff, file_buff_size}, 
+             file_test_iters,"KameUtil::fprint"),
     // binary file tests
     FileTest({binary_fwriteTest,  file_buff, file_buff_size}, 
              file_test_iters,"binary fwrite"),
