@@ -11,86 +11,96 @@ Results on Windows 7/Intel i3-2370M compiled with Visual Studio 2015:
 stdout test iterations = 1000
 file test iterations = 1000000
 string test iterations = 500000
-number of times each test was run = 11
+number of times each test was run = 5
 
 stdout tests with buffer (setvbuf,pubsetbuf) = 65536 bytes:
-printf test time = 168.00ms
-cout test time = 145.27ms
-template printf test time = 129.45ms
-template cpp printf test time = 161.00ms
+printf test time = 18.40ms
+cout test time = 32.60ms
+template printf test time = 19.40ms
+template cpp printf test time = 48.40ms
+KameUtil::print test time = 41.00ms
 
 file tests:
-fprintf test time = 7523.91ms
-buffered (formatted) fwrite test time = 5741.64ms
-ofstream test time = 16942.91ms
-buffered (formatted) ofstream write test time = 5786.18ms
-template fprintf test time = 10508.91ms
-template cpp fprintf test time = 22311.00ms
-binary fwrite test time = 4052.73ms
-buffered binary fwrite test time = 1321.73ms
-binary ofstream write test time = 5441.45ms
-buffered binary ofstream write test time = 1390.91ms
+fprintf test time = 6827.80ms
+buffered (formatted) fwrite test time = 4531.00ms
+ofstream test time = 15312.40ms
+buffered (formatted) ofstream write test time = 4781.20ms
+template fprintf test time = 9636.80ms
+template cpp fprintf test time = 20484.00ms
+KameUtil::fprint test time = 22530.00ms
+binary fwrite test time = 3966.00ms
+buffered binary fwrite test time = 1362.00ms
+binary ofstream write test time = 5221.20ms
+buffered binary ofstream write test time = 1328.80ms
 
 file tests with buffer (setvbuf) = 65536 bytes:
-fprintf test time = 7424.09ms
-buffered (formatted) fwrite test time = 5625.09ms
-ofstream test time = 16598.55ms
-buffered (formatted) ofstream write test time = 5644.64ms
-template fprintf test time = 10329.18ms
-template cpp fprintf test time = 21700.36ms
-binary fwrite test time = 3922.09ms
-buffered binary fwrite test time = 1299.09ms
-binary ofstream write test time = 5325.91ms
-buffered binary ofstream write test time = 1396.55ms
+fprintf test time = 6751.40ms
+buffered (formatted) fwrite test time = 4485.00ms
+ofstream test time = 15129.20ms
+buffered (formatted) ofstream write test time = 4545.20ms
+template fprintf test time = 9614.20ms
+template cpp fprintf test time = 20077.00ms
+KameUtil::fprint test time = 22188.00ms
+binary fwrite test time = 3931.00ms
+buffered binary fwrite test time = 1682.00ms
+binary ofstream write test time = 5111.00ms
+buffered binary ofstream write test time = 1247.20ms
 
 string tests:
-sprintf test time = 2743.64ms
-template sprintf test time = 2431.64ms
-heap sprintf test time = 2663.36ms
-ostringstream test time = 7505.82ms
-template heap sprintf test time = 2754.18ms
+sprintf test time = 1942.40ms
+template sprintf test time = 1919.20ms
+heap sprintf test time = 2176.80ms
+ostringstream test time = 6993.80ms
+template heap sprintf test time = 2154.80ms
+KameUtil::sprint test time = 9591.80ms
+
 ```
 Results on Windows 7/Intel i7-4770K compiled with Visual Studio 2015:
 ```
 stdout test iterations = 1000
 file test iterations = 1000000
 string test iterations = 500000
-number of times each test was run = 11
+number of times each test was run = 5
 
 stdout tests with buffer (setvbuf,pubsetbuf) = 65536 bytes:
-printf test time = 247.27ms
-cout test time = 87.55ms
-template printf test time = 81.09ms
-template cpp printf test time = 91.45ms
+printf test time = 4.00ms
+cout test time = 9.00ms
+template printf test time = 5.00ms
+template cpp printf test time = 10.60ms
+KameUtil::print test time = 11.20ms
 
 file tests:
-fprintf test time = 3348.64ms
-buffered (formatted) fwrite test time = 2863.55ms
-ofstream test time = 8008.45ms
-buffered (formatted) ofstream write test time = 2910.45ms
-template fprintf test time = 4985.82ms
-template cpp fprintf test time = 10583.82ms
-binary fwrite test time = 1784.64ms
-buffered binary fwrite test time = 483.45ms
-binary ofstream write test time = 2443.45ms
-buffered binary ofstream write test time = 512.00ms
+fprintf test time = 3248.20ms
+buffered (formatted) fwrite test time = 2424.40ms
+ofstream test time = 8105.20ms
+buffered (formatted) ofstream write test time = 2430.80ms
+template fprintf test time = 5081.60ms
+template cpp fprintf test time = 10698.40ms
+KameUtil::fprint test time = 11527.00ms
+binary fwrite test time = 1822.00ms
+buffered binary fwrite test time = 472.00ms
+binary ofstream write test time = 2451.80ms
+buffered binary ofstream write test time = 481.60ms
 
 file tests with buffer (setvbuf) = 65536 bytes:
-fprintf test time = 3339.18ms
-buffered (formatted) fwrite test time = 2878.09ms
-ofstream test time = 7976.55ms
-buffered (formatted) ofstream write test time = 2872.73ms
-template fprintf test time = 4972.45ms
-template cpp fprintf test time = 10534.91ms
-binary fwrite test time = 1765.45ms
-buffered binary fwrite test time = 475.27ms
-binary ofstream write test time = 2292.36ms
-buffered binary ofstream write test time = 467.36ms
+fprintf test time = 3202.20ms
+buffered (formatted) fwrite test time = 2399.80ms
+ofstream test time = 8059.20ms
+buffered (formatted) ofstream write test time = 2410.00ms
+template fprintf test time = 5033.60ms
+template cpp fprintf test time = 10666.60ms
+KameUtil::fprint test time = 11499.00ms
+binary fwrite test time = 1806.60ms
+buffered binary fwrite test time = 457.40ms
+binary ofstream write test time = 2418.60ms
+buffered binary ofstream write test time = 457.80ms
 
 string tests:
-sprintf test time = 1502.55ms
-template sprintf test time = 1348.91ms
-heap sprintf test time = 1436.91ms
-ostringstream test time = 3720.55ms
-template heap sprintf test time = 1450.36ms
+sprintf test time = 1096.40ms
+template sprintf test time = 1116.60ms
+heap sprintf test time = 1213.20ms
+ostringstream test time = 3768.40ms
+template heap sprintf test time = 1192.40ms
+KameUtil::sprint test time = 4971.80ms
+
 ```
