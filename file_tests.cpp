@@ -1,6 +1,6 @@
 #include "print_tests.h"
 #include "template_fprintf.h"
-#include "KameUtil/fprint.h"
+#include "KameUtil/print.h"
 #include <cstdio>
 #include <cstring>
 #include <fstream>
@@ -335,27 +335,42 @@ double templateCppFPrintfTest(size_t iterations, char *buff,
 
 namespace {
 
-struct KameUtilFPrintFwd {
-  KameUtilFPrintFwd(std::ofstream fout) : fout{std::move(fout)} { }
+template <class OStream>
+struct KameUtilPrintFwd {
+  KameUtilPrintFwd(OStream &os) : os{os} { }
 
   template <class ...Args>
   void operator()(Args &&...args)
   {
-    KameUtil::fprint(fout, std::forward<Args>(args)...);
+    KameUtil::streamPrint(os, std::forward<Args>(args)...);
   }
 
-  std::ofstream fout;
+  OStream &os;
 };
 
 }
 
-// Tests KameUtil::fprint
-double KameUtilFPrintTest(size_t iterations, char *buff, 
+// Tests KameUtil::streamPrint with ofstream
+double KameUtil_ofstreamTest(size_t iterations, char *buff, 
                           size_t buff_size)
 {
   std::ofstream fout("test.out");
   if (buff)
     fout.rdbuf()->pubsetbuf(buff, buff_size);
-  KameUtilFPrintFwd func(std::move(fout));
+  KameUtilPrintFwd<std::ostream> func(fout);
   return KameUtilPrintStyleTest(func, iterations);
 }
+
+// Tests templated Fprintf using stdio functions
+double KameUtil_fprintfTest(size_t iterations, char *buff, size_t buff_size)
+{
+  OutFileStream fout("test.out");
+  if (buff)
+    setvbuf(fout.file.get(), buff, _IOFBF, buff_size);
+
+  KameUtilPrintFwd<OutFileStream> func{fout};
+
+  return KameUtilPrintStyleTest(func, iterations);
+}
+
+

@@ -14,6 +14,8 @@ double bufferedBinary_ofstreamWriteTest(size_t iterations, char *buff, size_t bu
 double templateFPrintfTest(size_t iterations, char *buff, size_t buff_size);
 double templateCppFPrintfTest(size_t iterations, char *buff, size_t buff_size);
 
-double KameUtilFPrintTest(size_t iterations, char *buff, size_t buff_size);
+double KameUtil_ofstreamTest(size_t iterations, char *buff, size_t buff_size);
+double KameUtil_fprintfTest(size_t iterations, char *buff, size_t buff_size);
+
 
 #endif

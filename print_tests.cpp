@@ -19,9 +19,9 @@ char file_buff[file_buff_size];
 int main(int argc, char *argv[])
 {  
   std::ios::sync_with_stdio(false);
-  bool use_setvbuf_stdout = false;
+  bool use_setvbuf = false;
   size_t test_iters = 1;
-  size_t stdout_test_iters = 1000;
+  size_t stdout_test_iters = 5000;
   size_t file_test_iters = 1000000;
   size_t string_test_iters = 500000;
 
@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
         printUsage();
         return EXIT_SUCCESS;
       } else if (strcmp(argv[i], "-use-setvbuf") == 0) {
-        use_setvbuf_stdout = true;
+        use_setvbuf = true;
       } else if (strcmp(argv[i], "-console") == 0 && i+1 < argc) {
         stdout_test_iters = strToUInt(argv[++i]);
       } else if (strcmp(argv[i], "-string") == 0 && i+1 < argc) {
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  if (use_setvbuf_stdout) {
+  if (use_setvbuf) {
     setvbuf(stdout, stdout_buff, _IOFBF, stdout_buff_size);
   }
 
@@ -60,21 +60,28 @@ int main(int argc, char *argv[])
     // stdout tests
     Test(printfTest, stdout_test_iters, "printf"),
     Test(coutTest, stdout_test_iters, "cout"),
-    Test(templatePrintfTest, stdout_test_iters, "template printf"),
-    Test(templateCppPrintfTest, stdout_test_iters, "template cpp printf"),
-    Test(KameUtilPrintTest, stdout_test_iters, "KameUtil::print"),
+    Test(templatePrintfTest, stdout_test_iters, "C++11 variadic printf"),
+    Test(templateCppPrintfTest, stdout_test_iters, 
+         "C++11 variadic printf with cout"),
+    Test(KameUtil_coutTest, stdout_test_iters, "KameUtil::print with cout")
   };
 
   Test string_tests[] = {
     // string tests
     Test(sprintfTest, string_test_iters, "sprintf"),
-    Test(templateSprintfTest, string_test_iters, "template sprintf"),
     Test(heapSprintfTest, string_test_iters, "heap sprintf"),
     Test(ostringstreamTest, string_test_iters, "ostringstream"),
-    Test(templateHeapSprintfTest, string_test_iters, "template heap sprintf"),
-    Test(KameUtilSPrintTest, string_test_iters, "KameUtil::sprint")
+    Test(templateSprintfTest, string_test_iters, 
+         "C++11 variadic static buffer sprintf"),
+    Test(templateHeapSprintfTest, string_test_iters, 
+         "C++11 variadic heap sprintf"),
+    Test(KameUtil_sstreamTest, string_test_iters, 
+         "KameUtil::print with std::stringstream"),
+    Test(KameUtil_bufferSprintfTest, string_test_iters, 
+         "KameUtil::streamPrint with static buffer stream"),
+    Test(KameUtil_heapSprintfTest, string_test_iters,
+         "KameUtil::streamPrint with heap buffer stream")
   };
-
 
   FileTest file_tests[] = {
     // formatted file tests
@@ -84,9 +91,15 @@ int main(int argc, char *argv[])
     FileTest(ofstreamTest, file_test_iters, "ofstream"), 
     FileTest(buffered_ofstreamWriteTest, file_test_iters, 
              "buffered (formatted) ofstream write"), 
-    FileTest(templateFPrintfTest, file_test_iters, "template fprintf"),
-    FileTest(templateCppFPrintfTest, file_test_iters, "template cpp fprintf"), 
-    FileTest(KameUtilFPrintTest, file_test_iters, "KameUtil::fprint"),
+    FileTest(templateFPrintfTest, file_test_iters, 
+             "C++11 variadic fprintf"),
+    FileTest(templateCppFPrintfTest, file_test_iters, 
+             "C++11 variadic fprintf with ofstream"), 
+    FileTest(KameUtil_ofstreamTest, file_test_iters, 
+             "KameUtil::streamPrint with ofstream"),
+    FileTest(KameUtil_ofstreamTest, file_test_iters, 
+             "KameUtil::streamPrint with fprintf"),
+
     // binary file tests
     FileTest(binary_fwriteTest, file_test_iters, "binary fwrite"),
     FileTest(bufferedBinary_fwriteTest, file_test_iters,
@@ -109,11 +122,14 @@ int main(int argc, char *argv[])
     FileTest({buffered_ofstreamWriteTest,  file_buff, file_buff_size},
              file_test_iters, "buffered (formatted) ofstream write"), 
     FileTest({templateFPrintfTest,  file_buff, file_buff_size}, 
-             file_test_iters,"template fprintf"),
+             file_test_iters,"C++11 variadic fprintf"),
     FileTest({templateCppFPrintfTest, file_buff, file_buff_size},  
-             file_test_iters,"template cpp fprintf"), 
-    FileTest({KameUtilFPrintTest, file_buff, file_buff_size}, 
-             file_test_iters,"KameUtil::fprint"),
+             file_test_iters,"C++11 variadic fprintf with ofstream"), 
+    FileTest({KameUtil_ofstreamTest, file_buff, file_buff_size}, 
+             file_test_iters,"KameUtil::streamPrint with ofstream"),
+    FileTest({KameUtil_fprintfTest, file_buff, file_buff_size}, 
+             file_test_iters,"KameUtil::streamPrint with fprintf"),
+
     // binary file tests
     FileTest({binary_fwriteTest,  file_buff, file_buff_size}, 
              file_test_iters,"binary fwrite"),
@@ -139,17 +155,19 @@ int main(int argc, char *argv[])
     }
 
     if (file_test_iters > 0) { 
-      for (auto &test : file_tests) {
-        printf("\n%s test\n", test.test_name);
-        fflush(stdout);
-        test.run();
-      }
-      
-      for (auto &test : file_tests2) {
-        printf("\n%s test (with setvbuf/ofstream::pubsetbuf\n", 
-               test.test_name);
-        fflush(stdout);
-        test.run();
+      if (use_setvbuf) {
+        for (auto &test : file_tests2) {
+          printf("\n%s test (with setvbuf/ofstream::pubsetbuf\n", 
+                 test.test_name);
+          fflush(stdout);
+          test.run();
+        }
+      } else { 
+        for (auto &test : file_tests) {
+          printf("\n%s test\n", test.test_name);
+          fflush(stdout);
+          test.run();
+        }
       }
     }
     
@@ -160,8 +178,6 @@ int main(int argc, char *argv[])
         test.run();
       }
     }
-
-
   }
 
   printf("\nstdout test iterations = %zu\n", stdout_test_iters);
@@ -169,27 +185,39 @@ int main(int argc, char *argv[])
   printf("string test iterations = %zu\n", string_test_iters);
   printf("number of times each test was run = %zu\n\n", test_iters);
 
-  if (use_setvbuf_stdout)
-    printf("stdout tests with buffer (setvbuf,pubsetbuf) = %zu bytes:\n",
-           stdout_buff_size);
-  else 
-    printf("stdout tests:\n");
+  if (stdout_test_iters > 0) {
+    if (use_setvbuf) {
+      printf("stdout tests with buffer (setvbuf,pubsetbuf) = %zu bytes:\n",
+             stdout_buff_size);
+    } else {
+      printf("stdout tests:\n");
+    }
 
-  for (auto &test : stdout_tests) 
-    printf("%s test time = %.2fms\n", test.test_name, test.average());
+    for (auto &test : stdout_tests) {
+      printf("%s test time = %.2fms\n", test.test_name, test.average());
+    }
+  }
 
-  printf("\nfile tests:\n");
-  for (auto &test : file_tests) 
-    printf("%s test time = %.2fms\n", test.test_name, test.average());
+  if (file_test_iters > 0) {
+    if (use_setvbuf) {
+      printf("\nfile tests with buffer (setvbuf,pubsetbuf) = %zu bytes:\n",
+               file_buff_size);
+      for (auto &test : file_tests2) {
+        printf("%s test time = %.2fms\n", test.test_name, test.average());
+      }
+    } else {
+      printf("\nfile tests:\n");
+      for (auto &test : file_tests) {
+        printf("%s test time = %.2fms\n", test.test_name, test.average());
+      }
+    }
+  }
 
-  printf("\nfile tests with buffer (setvbuf) = %zu bytes:\n",
-         file_buff_size);
-  for (auto &test : file_tests2) 
-    printf("%s test time = %.2fms\n", test.test_name, test.average());
-
-  printf("\nstring tests:\n");
-  for (auto &test : string_tests) 
-    printf("%s test time = %.2fms\n", test.test_name, test.average());
+  if (string_test_iters > 0) {
+    printf("\nstring tests:\n");
+    for (auto &test : string_tests) 
+      printf("%s test time = %.2fms\n", test.test_name, test.average());
+  }
 
   return EXIT_SUCCESS;
 }
@@ -198,10 +226,10 @@ void printUsage()
 {
   printf("Usage: print-tests [--help] [-use-setvbuf] [-console COUNT] "
          "[-file COUNT]\n\t[-string COUNT] [-rerun COUNT]\n");
-  printf("-use-setvbuf = Use setvbuf for stdout.\n");
+  printf("-use-setvbuf = Use setvbuf for stdout and files.\n");
   printf("-console COUNT = Run console tests COUNT times. This affects "
          "how much data is\n\twritten to console in each test.\n"
-         "\tDefault is 1000.\n");
+         "\tDefault is 5000.\n");
   printf("-file COUNT = Run file tests COUNT times. This affects how "
          "much data is written\n\tto the test file 'test.out' in each "
          "test.\n\tDefault is 1000000.\n");

@@ -11,20 +11,26 @@ class String {
   std::unique_ptr<char[]> buff;
 
 public:
-  String() : sz{0}, buff_size{20}, buff{new char[buff_size]} { buff[0] = '\0'; }
+  String() : sz{0}, buff_size{20}, buff{new char[buff_size]} 
+  { 
+    buff[0] = '\0'; 
+  }
   size_t size() { return sz; }
   const char* c_str() { return buff.get(); }
 
   void append(const char *src, size_t src_size)
   {
     if ((sz + src_size) >= (buff_size - 1)) {
-      buff_size *= 2;       
+      do {
+        buff_size *= 2;       
+      } while ((sz + src_size) >= (buff_size - 1));
+
       char *tmp = new char[buff_size];
-      strcpy(tmp, buff.get());
+      strcpy(tmp, buff.get()); // buff is null terminated
       buff.reset(tmp);
     }
 
-    strcpy(buff.get() + sz, src);
+    strncpy(buff.get() + sz, src, src_size);
     sz += src_size;
     buff[sz] = '\0';
   }

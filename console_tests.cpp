@@ -60,7 +60,7 @@ struct KameUtilPrintFwd {
 
 }
 
-double KameUtilPrintTest(size_t iterations)
+double KameUtil_coutTest(size_t iterations)
 {
   KameUtilPrintFwd func;
   return KameUtilPrintStyleTest(func, iterations);

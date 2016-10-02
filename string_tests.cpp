@@ -1,7 +1,7 @@
 #include "string.h"
 #include "template_fprintf.h"
 #include "print_tests.h"
-#include "KameUtil/sprint.h"
+#include "KameUtil/print.h"
 #include <cstring>
 #include <sstream>
 
@@ -37,11 +37,12 @@ namespace {
 // Stream object used by templateSprintfTest for testing the 
 // templated FPrintf with sprintf with a static buffer
 struct OutStringStream {
-  static const size_t buff_size = 1000;
+  static const size_t buff_size = 4096;
   size_t size;
   char buff[buff_size];
 
   OutStringStream() : size{0} {}
+
   void checkSize(int needed) 
   { 
     if (size + needed >= buff_size - 1) {
@@ -81,6 +82,13 @@ struct OutStringStream {
       operator<<(*s++);
     }
     return *this; 
+  }
+  OutStringStream& write(const char *s, int len) 
+  {
+    checkSize(len);
+    strncpy(buff + size, s, len);
+    size += len;
+    return *this;
   }
 };
 
@@ -139,6 +147,12 @@ struct OutHeapStringStream {
     str.append(val);
     return *this; 
   }
+
+  OutHeapStringStream& write(const char *s, int len) 
+  {
+    str.append(s, len);
+    return *this;
+  }
 };
 
 }
@@ -154,21 +168,39 @@ double templateHeapSprintfTest(size_t iterations)
 
 namespace {
 
+template <class OStream>
 struct KameUtilSPrintFwd {
+  KameUtilSPrintFwd(OStream &os) : os{os} { }
+
   template <class ...Args>
   void operator()(Args &&...args)
   {
-    KameUtil::sprint(ss, std::forward<Args>(args)...);
+    KameUtil::streamPrint(os, std::forward<Args>(args)...);
   }
 
-  std::stringstream ss;
+  OStream &os;
 };
 
 }
 
-// Tests KameUtil::fprint
-double KameUtilSPrintTest(size_t iterations)
+// Tests KameUtil::print using std::stringstream
+double KameUtil_sstreamTest(size_t iterations)
 {
-  KameUtilSPrintFwd func;
+  std::stringstream ss;
+  KameUtilSPrintFwd<std::ostream> func(ss); 
+  return KameUtilPrintStyleTest(func, iterations);
+}
+
+double KameUtil_heapSprintfTest(size_t iterations)
+{
+  OutHeapStringStream ss;
+  KameUtilSPrintFwd<OutHeapStringStream> func(ss); 
+  return KameUtilPrintStyleTest(func, iterations);
+}
+
+double KameUtil_bufferSprintfTest(size_t iterations)
+{
+  OutStringStream ss;
+  KameUtilSPrintFwd<OutStringStream> func(ss); 
   return KameUtilPrintStyleTest(func, iterations);
 }

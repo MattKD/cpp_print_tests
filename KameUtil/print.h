@@ -7,17 +7,28 @@
 namespace KameUtil {
 
 template <class ...Args>
-bool print(const char *fmt, const Args &...args)
+bool print(std::ostream &os, const char *fmt, const Args &...args)
 {
-  return streamPrint<std::ostream>(std::cout, fmt, args...);
+  return streamPrint(os, fmt, args...);
 }
 
 template <class ...Args>
-bool wprint(const wchar_t *fmt, const Args &...args)
+bool print(const char *fmt, const Args &...args)
 {
-  return streamPrint<std::wostream>(std::wcout, fmt, args...);
+  return print(std::cout, fmt, args...);
 }
 
+template <class ...Args>
+bool print(std::wostream &os, const wchar_t *fmt, const Args &...args)
+{
+  return streamPrint(os, fmt, args...);
+}
+
+template <class ...Args>
+bool print(const wchar_t *fmt, const Args &...args)
+{
+  return print(std::wcout, fmt, args...);
+}
 
 } // end namespace KameUtil
 
