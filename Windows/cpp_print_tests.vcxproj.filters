@@ -15,36 +15,36 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="console_tests.h">
+    <ClInclude Include="..\src\console_tests.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="file_tests.h">
+    <ClInclude Include="..\src\file_tests.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="print_tests.h">
+    <ClInclude Include="..\src\print_tests.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="string.h">
+    <ClInclude Include="..\src\string.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="string_tests.h">
+    <ClInclude Include="..\src\string_tests.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="template_fprintf.h">
+    <ClInclude Include="..\src\template_fprintf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="console_tests.cpp">
+    <ClCompile Include="..\src\console_tests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="file_tests.cpp">
+    <ClCompile Include="..\src\file_tests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="print_tests.cpp">
+    <ClCompile Include="..\src\print_tests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="string_tests.cpp">
+    <ClCompile Include="..\src\string_tests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

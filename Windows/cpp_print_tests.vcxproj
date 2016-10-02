@@ -18,6 +18,20 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\console_tests.h" />
+    <ClInclude Include="..\src\file_tests.h" />
+    <ClInclude Include="..\src\print_tests.h" />
+    <ClInclude Include="..\src\string.h" />
+    <ClInclude Include="..\src\string_tests.h" />
+    <ClInclude Include="..\src\template_fprintf.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\console_tests.cpp" />
+    <ClCompile Include="..\src\file_tests.cpp" />
+    <ClCompile Include="..\src\print_tests.cpp" />
+    <ClCompile Include="..\src\string_tests.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{851B0C18-0CDA-4F18-922B-698FC78274B8}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
@@ -149,20 +163,6 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="console_tests.h" />
-    <ClInclude Include="file_tests.h" />
-    <ClInclude Include="print_tests.h" />
-    <ClInclude Include="string.h" />
-    <ClInclude Include="string_tests.h" />
-    <ClInclude Include="template_fprintf.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="console_tests.cpp" />
-    <ClCompile Include="file_tests.cpp" />
-    <ClCompile Include="print_tests.cpp" />
-    <ClCompile Include="string_tests.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
