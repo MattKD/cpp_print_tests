@@ -7,16 +7,20 @@ void printUsage();
 size_t strToUInt(const char *str);
 
 //
-// Templated tests for c and c++ style printing
+// Templated tests for C, C++, variadic template, and KameUtil-Print
+// style formatting
 //
+
+static const char *str = "world";
+static const char *str2 = "happy";
+static int x = 10;
+static int y = 20;
+static double a = 17;
+static double b = 3;
 
 template <typename PrintFunc>
 double printfStyleTest(PrintFunc &func, size_t iterations)
 {
-  const char *str = "world";
-  const char *str2 = "happy";
-  int x = 10, y = 20;
-  double a = 17, b = 3;
   clock_t start = clock(); 
 
   for (size_t i = 0; i < iterations; ++i) {
@@ -27,6 +31,8 @@ double printfStyleTest(PrintFunc &func, size_t iterations)
     func("%d%d%d%d%d%f%f\n", x, y, 3, 2, 1, a * b, a / b);
   }
 
+  func.flush();
+
   clock_t end = clock(); 
   double duration = 1000.0 * (end-start) / CLOCKS_PER_SEC;
   return duration;
@@ -35,10 +41,6 @@ double printfStyleTest(PrintFunc &func, size_t iterations)
 template <typename OutStream>
 double cppStyleTest(OutStream &os, size_t iterations)
 {
-  const char *str = "world";
-  const char *str2 = "happy";
-  int x = 10, y = 20;
-  double a = 17, b = 3;
   clock_t start = clock(); 
 
   for (size_t i = 0; i < iterations; ++i) {
@@ -50,6 +52,8 @@ double cppStyleTest(OutStream &os, size_t iterations)
     os << x << y << 3 << 2 << 1 << a * b << a / b << "\n";
   }
 
+  os.flush();
+
   clock_t end = clock(); 
   double duration = 1000.0 * (end-start) / CLOCKS_PER_SEC;
   return duration;
@@ -58,10 +62,6 @@ double cppStyleTest(OutStream &os, size_t iterations)
 template <typename PrintFunc>
 double KameUtilPrintStyleTest(PrintFunc &func, size_t iterations)
 {
-  const char *str = "world";
-  const char *str2 = "happy";
-  int x = 10, y = 20;
-  double a = 17, b = 3;
   clock_t start = clock(); 
 
   for (size_t i = 0; i < iterations; ++i) {
@@ -72,38 +72,53 @@ double KameUtilPrintStyleTest(PrintFunc &func, size_t iterations)
     func("{}{}{}{}{}{}{}\n", x, y, 3, 2, 1, a * b, a / b);
   }
 
+  func.flush();
+
   clock_t end = clock(); 
   double duration = 1000.0 * (end-start) / CLOCKS_PER_SEC;
   return duration;
 }
 
-
 typedef double (*TestFunc)(size_t iterations);
 typedef double (*FileTestFunc)(size_t iterations, char *buff, size_t buff_size);
 
-template <typename TestFunction>
 struct BaseTest {
-  BaseTest(TestFunction test, size_t iterations, const char *test_name) 
+  BaseTest(size_t iterations, const char *test_name) 
     : times_run{0}, iterations{iterations}, test_name{test_name}, 
-      duration{0.0f}, test{test} { }
+      duration{0.0f} { }
 
-  void run() { duration += test(iterations); ++times_run; }
+  virtual ~BaseTest() { }
+  virtual double runImpl(size_t iters) = 0;
+
+  void run() { duration += runImpl(iterations); ++times_run; }
   double average() { return times_run == 0 ? 0 : duration / times_run; }
 
   size_t times_run;
   size_t iterations;
   const char *test_name;
   double duration;
-  TestFunction test;
 };
 
-struct FileTestFunctor {
-  FileTestFunctor(FileTestFunc test) 
-    : FileTestFunctor(test, nullptr, 0) { }
-  FileTestFunctor(FileTestFunc test, char *buff, size_t buff_size)
-    : buff{buff}, buff_size{buff_size}, file_test{test} { }
 
-  double operator()(size_t iterations) 
+struct Test : BaseTest {
+  Test(TestFunc func, size_t iters, const char *test_name)
+    : BaseTest(iters, test_name), test{func} { }
+
+  double runImpl(size_t iters) override
+  { 
+    return test(iterations); 
+  }
+
+  TestFunc test;
+};
+
+struct FileTest : BaseTest {
+  FileTest(FileTestFunc func, size_t iters, const char *test_name, 
+    char *buff = nullptr, size_t buff_size = 0)
+    : BaseTest(iters, test_name), buff{buff}, buff_size{buff_size}, 
+      file_test{func} { }
+
+  double runImpl(size_t iters) override
   { 
     return file_test(iterations, buff, buff_size); 
   }
@@ -113,7 +128,5 @@ struct FileTestFunctor {
   FileTestFunc file_test;
 };
 
-typedef BaseTest<TestFunc> Test;
-typedef BaseTest<FileTestFunctor> FileTest;
 
 #endif

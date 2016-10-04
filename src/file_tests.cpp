@@ -1,17 +1,14 @@
 #include "print_tests.h"
-#include "template_fprintf.h"
-#include "KameUtil/print.h"
+#include "vtemplate_print.h"
+#include "kame_util_fwd.h"
 #include <cstdio>
 #include <cstring>
 #include <fstream>
 #include <memory>
 
-//
-// stdio tests
-//
-
 namespace {
 
+// Safe wrapper around cstdio FILE*
 class FileWrapper {
   FILE *file;
 public:
@@ -19,130 +16,166 @@ public:
   { 
     file = fopen(filename, "w"); 
   }
+
   FileWrapper(const FileWrapper&) = delete;
+
   FileWrapper(FileWrapper &&other) 
   { 
     file = other.file; 
     other.file = nullptr; 
   }
-  ~FileWrapper() { if (file) fclose(file); }
+
+  ~FileWrapper() { if (file) fclose(file); file = nullptr; }
 
   FILE* get() { return file; }
 };
 
-// Functor is necessary to pass fprintf to 
-// printfStyleTest template function
-struct fprintfFunctor {
-  FileWrapper file;
-  explicit fprintfFunctor(const char *filename) : file{filename} { }
+// For using fprintf with template function tests
+struct FprintfFwd {
+  explicit FprintfFwd(const char *filename) : file{filename} { }
 
   template <typename... Args>
   void operator()(Args&& ...args)
   {
     fprintf(file.get(), std::forward<Args>(args)...);
   }
+
+  void flush() { fflush(file.get()); }
+
+  FileWrapper file;
 };
 
-}
+// Stream object to test cstdio file functions with variadic template print
+// and KameUtil-Print
+struct CSTDIO_Stream {
+  explicit CSTDIO_Stream(const char *filename) : file{filename} { }
 
-// Tests fprintf
-double fprintfTest(size_t iterations, char *buff, size_t buff_size)
-{
-  fprintfFunctor fout("test.out");
-  if (buff)
-    setvbuf(fout.file.get(), buff, _IOFBF, buff_size);
-  return printfStyleTest(fout, iterations);
-}
+  CSTDIO_Stream& operator<<(char c) 
+  { 
+    fputc(c, file.get()); 
+    return *this; 
+  }
 
-namespace {
+  CSTDIO_Stream& operator<<(int i) 
+  { 
+    fprintf(file.get(), "%d", i); 
+    return *this; 
+  }
+
+  CSTDIO_Stream& operator<<(double d) 
+  { 
+    fprintf(file.get(), "%f", d); 
+    return *this; 
+  }
+
+  CSTDIO_Stream& operator<<(const char *s) 
+  { 
+    fputs(s, file.get()); 
+    return *this; 
+  }
+
+  void flush() { fflush(file.get()); }
+
+  FileWrapper file;
+};
 
 // Wrapper for fwrite using same function signature as ofstream::write
 // to be used with BinaryOutStream and BufferedBinaryOutStream
-struct fwriteWrapper {
+struct FwriteFwd {
+  explicit FwriteFwd(const char *filename) : file{filename} { }
+
+  void write(const char *data, size_t count) 
+  { 
+    fwrite(data, 1, count, file.get()); 
+  }
+
+  void flush() { fflush(file.get()); }
+
   FileWrapper file;
-  explicit fwriteWrapper(const char *filename) : file{filename} { }
-  void write(const char *data, size_t count) { fwrite(data, 1, count, file.get()); }
 };
 
 // Stream object for testing fwrite and ostream::write with formatted text
 template <typename OutStream>
 struct BufferedOutStream {
-  OutStream os;
-  const size_t buffer_max_size = 1 << 14; //16Kb
-  std::unique_ptr<char[]> buffer;
-  size_t buffer_size;
-
-  BufferedOutStream(OutStream os) : os{std::move(os)}, 
+  BufferedOutStream(OutStream &&os) : os{std::move(os)}, 
     buffer{new char[buffer_max_size]}, buffer_size{0} {}
+
+  BufferedOutStream(BufferedOutStream &&other) : os{std::move(other.os)}, 
+    buffer{std::move(other.buffer)}, buffer_size{other.buffer_size} 
+  {
+    other.buffer_size = 0;
+  }
 
   ~BufferedOutStream() 
   { 
-    if (buffer_size > 0)
-      writeBuffer();
+    if (buffer_size > 0) {
+      write();
+    }
   }
 
-  void writeBuffer()
+  void write()
   {
     os.write(buffer.get(), buffer_size);
     buffer_size = 0;
   }
 
-  BufferedOutStream& operator<<(const char *str)
+  void flush() { write(); os.flush(); }
+
+  void append(const char *s, size_t len)
   {
-    while (*str) {
-      buffer[buffer_size++] = *str;
-      if (buffer_size == buffer_max_size)
-        writeBuffer();
-      ++str;
+    while (buffer_size + len > buffer_max_size) {
+      size_t cpy_amount = buffer_max_size - buffer_size;
+      strncpy(buffer.get() + buffer_size, s, cpy_amount);
+      write();
+      s += cpy_amount;
+      len -= cpy_amount;
     }
 
+    strncpy(buffer.get()+buffer_size, s, len);
+  }
+
+  BufferedOutStream& operator<<(const char *str)
+  {
+    append(str, strlen(str));
+    return *this;
+  }
+
+  BufferedOutStream& operator<<(char c)
+  {
+    if (buffer_size == buffer_max_size) {
+      write();
+    }
+    buffer.get()[buffer_size++] = c;
     return *this;
   }
 
   BufferedOutStream& operator<<(int i)
   {
-    // max str size of int = (bits in char) * (bytes in int) * ceiling(log10(2))
-    // + 1 for double to int truncation, and +2 for sign and null char
-    const int max_int_size = (int)(CHAR_BIT * sizeof(int) * 0.301f) + 3;
+    const int max_int_size = 64;
     char int_str[max_int_size];
-    sprintf(int_str, "%d", i);
-    operator<<(int_str);
-
+    int n = snprintf(int_str, max_int_size, "%d", i);
+    append(int_str, n);
     return *this;
   }
 
   BufferedOutStream& operator<<(double d)
   {
-    const int dbl_str_size = 512;
+    const int dbl_str_size = 2048;
     char dbl_str[dbl_str_size];
-    sprintf(dbl_str, "%f", d);
-    operator<<(dbl_str);
-
+    int n = snprintf(dbl_str, dbl_str_size, "%f", d);
+    append(dbl_str, n);
     return *this;
   }
+
+  OutStream os;
+  const size_t buffer_max_size = 1 << 14; //16Kb
+  std::unique_ptr<char[]> buffer;
+  size_t buffer_size;
 };
-
-}
-
-// Tests fwrite with formatted text and a large buffer
-double buffered_fwriteTest(size_t iterations, char *buff, size_t buff_size)
-{
-  fwriteWrapper fout("test.out");
-  if (buff)
-    setvbuf(fout.file.get(), buff, _IOFBF, buff_size);
-
-  BufferedOutStream<fwriteWrapper> os(std::move(fout));
-
-  return cppStyleTest(os, iterations);
-}
-
-namespace {
 
 // Stream object for testing fwrite and ostream::write with binary data
 template <typename OutStream>
 struct BinaryOutStream {
-  OutStream os;
-
   BinaryOutStream(OutStream os) : os{std::move(os)} {}
 
   BinaryOutStream& operator<<(const char *str)
@@ -150,106 +183,149 @@ struct BinaryOutStream {
     os.write(str, strlen(str));
     return *this;
   }
-  BinaryOutStream& operator<<(int i)
+
+  template <class T>
+  BinaryOutStream& operator<<(T val)
   {
-    os.write((char*)&i, sizeof(i)); 
+    os.write((char*)&val, sizeof(T)); 
     return *this;
   }
-  BinaryOutStream& operator<<(double d)
-  {
-    os.write((char*)&d, sizeof(d)); 
-    return *this;
-  }
+
+  void flush() { os.flush(); }
+
+  OutStream os;
 };
-
-}
-
-// Tests fwrite with binary data
-double binary_fwriteTest(size_t iterations, char *buff, size_t buff_size)
-{
-  fwriteWrapper fout("test.out");
-  if (buff)
-    setvbuf(fout.file.get(), buff, _IOFBF, buff_size);
-
-  BinaryOutStream<fwriteWrapper> os{std::move(fout)};
-  return cppStyleTest(os, iterations);
-}
-
-namespace {
 
 // Template for writing binary data to a stream using a buffer.
 // Data is written only when buffer is filled.
 template <typename OutStream>
 struct BufferedBinaryOutStream {
-  OutStream os;
-  const size_t buffer_max_size = 1 << 14;
-  std::unique_ptr<char[]> buffer;
-  size_t buffer_size;
-
-  BufferedBinaryOutStream(OutStream os) : os{std::move(os)}, 
+  BufferedBinaryOutStream(OutStream &&os) : os{std::move(os)}, 
     buffer{new char[buffer_max_size]}, buffer_size{0} {}
+
+  BufferedBinaryOutStream(BufferedBinaryOutStream &&other) 
+    : os{std::move(other.os)}, buffer{std::move(other.buffer)}, 
+      buffer_size{other.buffer_size} 
+  {
+    other.buffer_size = 0;
+  }
 
   ~BufferedBinaryOutStream() 
   { 
-    if (buffer_size > 0)
-      writeBuffer();
+    if (buffer_size > 0) {
+      write();
+    }
   }
 
-  void writeBuffer()
+  void write()
   {
     os.write(buffer.get(), buffer_size);
     buffer_size = 0;
   }
 
-  BufferedBinaryOutStream& operator<<(const char *str)
+  void flush() { write(); os.flush(); }
+
+  void append(const char *s, size_t len)
   {
-    while (*str) {
-      buffer[buffer_size++] = *str;
-      if (buffer_size == buffer_max_size)
-        writeBuffer();
-      ++str;
+    while (buffer_size + len > buffer_max_size) {
+      size_t cpy_amount = buffer_max_size - buffer_size;
+      memcpy(buffer.get() + buffer_size, s, cpy_amount);
+      write();
+      s += cpy_amount;
+      len -= cpy_amount;
     }
 
+    memcpy(buffer.get()+buffer_size, s, len);
+  }
+
+  BufferedBinaryOutStream& operator<<(const char *str)
+  {
+    append(str, strlen(str));
+    return *this;
+  }
+
+  BufferedBinaryOutStream& operator<<(char c)
+  {
+    checkSize(1);
+    buffer[buffer_size++] = c;
     return *this;
   }
 
   BufferedBinaryOutStream& operator<<(int i)
   {
-    if ((buffer_size + sizeof(i)) >= buffer_max_size)
-      writeBuffer();
-    memcpy(&buffer[buffer_size], &i, sizeof(i));
+    checkSize(sizeof(i));
+    memcpy(buffer.get()+buffer_size, &i, sizeof(i));
     buffer_size += sizeof(i);
-
     return *this;
   }
 
   BufferedBinaryOutStream& operator<<(double d)
   {
-    if ((buffer_size + sizeof(d)) >= buffer_max_size)
-      writeBuffer();
-    memcpy(&buffer[buffer_size], &d, sizeof(d));
+    checkSize(sizeof(d));
+    memcpy(buffer.get()+buffer_size, &d, sizeof(d));
     buffer_size += sizeof(d);
-
     return *this;
   }
+
+  void checkSize(int needed)
+  {
+    if (buffer_size + needed > buffer_max_size) {
+      write();
+    }
+    buffer_size = 0;
+  }
+
+  OutStream os;
+  const size_t buffer_max_size = 1 << 14;
+  std::unique_ptr<char[]> buffer;
+  size_t buffer_size;
 };
 
+} // end anon namespace
+
+// Tests fprintf
+double fprintfTest(size_t iterations, char *buff, size_t buff_size)
+{
+  FprintfFwd fout("test.out");
+  if (buff) {
+    setvbuf(fout.file.get(), buff, _IOFBF, buff_size);
+  }
+  return printfStyleTest(fout, iterations);
+}
+
+// Tests fwrite with formatted text and a large buffer
+double buffered_fwriteTest(size_t iterations, char *buff, size_t buff_size)
+{
+  FwriteFwd fout("test.out");
+  if (buff)
+    setvbuf(fout.file.get(), buff, _IOFBF, buff_size);
+
+  BufferedOutStream<FwriteFwd> os(std::move(fout));
+
+  return cppStyleTest(os, iterations);
+}
+
+// Tests fwrite with binary data
+double binary_fwriteTest(size_t iterations, char *buff, size_t buff_size)
+{
+  FwriteFwd fout("test.out");
+  if (buff)
+    setvbuf(fout.file.get(), buff, _IOFBF, buff_size);
+
+  BinaryOutStream<FwriteFwd> os{std::move(fout)};
+  return cppStyleTest(os, iterations);
 }
 
 // Tests fwrite with binary data and a large buffer
 double bufferedBinary_fwriteTest(size_t iterations, char *buff, size_t buff_size)
 {
-  fwriteWrapper fout("test.out");
+  FwriteFwd fout("test.out");
   if (buff)
     setvbuf(fout.file.get(), buff, _IOFBF, buff_size);
 
-  BufferedBinaryOutStream<fwriteWrapper> os(std::move(fout));
+  BufferedBinaryOutStream<FwriteFwd> os(std::move(fout));
   return cppStyleTest(os, iterations);
 }
-
-//
-// iostream tests
-//
 
 // Tests std::ofstream
 double ofstreamTest(size_t iterations, char *buff, size_t buff_size)
@@ -261,7 +337,8 @@ double ofstreamTest(size_t iterations, char *buff, size_t buff_size)
 }
 
 // Tests std::ofstream::write with formatted text and a large buffer
-double buffered_ofstreamWriteTest(size_t iterations, char *buff, size_t buff_size)
+double buffered_ofstreamWriteTest(size_t iterations, char *buff, 
+  size_t buff_size)
 {
   std::ofstream fout("test.out");
   if (buff)
@@ -290,87 +367,80 @@ double bufferedBinary_ofstreamWriteTest(size_t iterations, char *buff, size_t bu
   return cppStyleTest(os, iterations);
 }
 
-//
-// templated printf style tests 
-//
-
-namespace {
-
-// Stream object to test the templated FPrintf with stdio functions 
-// to print to a file
-struct OutFileStream {
-  FileWrapper file;
-  explicit OutFileStream(const char *filename) : file{filename} { }
-
-  OutFileStream& operator<<(char c) { fputc(c, file.get()); return *this; }
-  OutFileStream& operator<<(int i) { fprintf(file.get(), "%d", i); return *this; }
-  OutFileStream& operator<<(double d) { fprintf(file.get(), "%f", d); return *this; }
-  OutFileStream& operator<<(const char *s) { fputs(s, file.get()); return *this; }
-};
-
-}
-
-// Tests templated Fprintf using stdio functions
-double templateFPrintfTest(size_t iterations, char *buff, size_t buff_size)
+// Tests templated Fprintf using stdio FILE functions
+double vtemplate_fprintfTest(size_t iterations, char *buff, 
+                             size_t buff_size)
 {
-  OutFileStream fout("test.out");
+  CSTDIO_Stream fout("test.out");
   if (buff)
     setvbuf(fout.file.get(), buff, _IOFBF, buff_size);
 
-  FPrintfFunctor<OutFileStream> func{std::move(fout)};
+  VTemplatePrintFwd<CSTDIO_Stream> func{std::move(fout)};
 
   return printfStyleTest(func, iterations);
 }
 
-// Tests templated Fprintf using ofstream
-double templateCppFPrintfTest(size_t iterations, char *buff, 
+// Tests variadic template print with ofstream
+double vtemplate_ofstreamTest(size_t iterations, char *buff, 
                               size_t buff_size)
 {
   std::ofstream fout("test.out");
   if (buff)
     fout.rdbuf()->pubsetbuf(buff, buff_size);
-  FPrintfFunctor<std::ofstream> func{std::move(fout)};
+  VTemplatePrintFwd<std::ofstream> func{std::move(fout)};
   return printfStyleTest(func, iterations);
-}
-
-namespace {
-
-template <class OStream>
-struct KameUtilPrintFwd {
-  KameUtilPrintFwd(OStream &os) : os{os} { }
-
-  template <class ...Args>
-  void operator()(Args &&...args)
-  {
-    KameUtil::streamPrint(os, std::forward<Args>(args)...);
-  }
-
-  OStream &os;
-};
-
 }
 
 // Tests KameUtil::streamPrint with ofstream
 double KameUtil_ofstreamTest(size_t iterations, char *buff, 
-                          size_t buff_size)
+                             size_t buff_size)
 {
   std::ofstream fout("test.out");
-  if (buff)
+  if (buff) {
     fout.rdbuf()->pubsetbuf(buff, buff_size);
-  KameUtilPrintFwd<std::ostream> func(fout);
+  }
+  KameUtilPrintFwd<std::ofstream> func(std::move(fout));
   return KameUtilPrintStyleTest(func, iterations);
 }
 
-// Tests templated Fprintf using stdio functions
+// Tests KameUtil::streamPrint with fprintf
 double KameUtil_fprintfTest(size_t iterations, char *buff, size_t buff_size)
 {
-  OutFileStream fout("test.out");
+  CSTDIO_Stream fout("test.out");
+  if (buff) {
+    setvbuf(fout.file.get(), buff, _IOFBF, buff_size);
+  }
+
+  KameUtilPrintFwd<CSTDIO_Stream> func{std::move(fout)};
+  return KameUtilPrintStyleTest(func, iterations);
+}
+
+// Tests fwrite with formatted text and a large buffer
+double KameUtil_buffered_fwriteTest(size_t iterations, char *buff, 
+                                   size_t buff_size)
+{
+  FwriteFwd fout("test.out");
   if (buff)
     setvbuf(fout.file.get(), buff, _IOFBF, buff_size);
 
-  KameUtilPrintFwd<OutFileStream> func{fout};
-
+  typedef BufferedOutStream<FwriteFwd> OS;
+  auto func = KameUtilPrintFwd<OS>(OS(std::move(fout)));
   return KameUtilPrintStyleTest(func, iterations);
 }
+
+// Tests fwrite with binary data and a large buffer
+double 
+KameUtil_bufferedBinary_fwriteTest(size_t iterations, char *buff, 
+                                  size_t buff_size)
+{
+  FwriteFwd fout("test.out");
+  if (buff)
+    setvbuf(fout.file.get(), buff, _IOFBF, buff_size);
+
+  typedef BufferedBinaryOutStream<FwriteFwd> OS;
+  auto func = KameUtilPrintFwd<OS>(OS(std::move(fout)));
+  return KameUtilPrintStyleTest(func, iterations);
+}
+
 
 

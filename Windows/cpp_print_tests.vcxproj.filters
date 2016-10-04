@@ -24,13 +24,13 @@
     <ClInclude Include="..\src\print_tests.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\string.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\string_tests.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\template_fprintf.h">
+    <ClInclude Include="..\src\kame_util_fwd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vtemplate_print.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

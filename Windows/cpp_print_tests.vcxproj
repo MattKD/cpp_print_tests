@@ -21,10 +21,10 @@
   <ItemGroup>
     <ClInclude Include="..\src\console_tests.h" />
     <ClInclude Include="..\src\file_tests.h" />
+    <ClInclude Include="..\src\kame_util_fwd.h" />
     <ClInclude Include="..\src\print_tests.h" />
-    <ClInclude Include="..\src\string.h" />
     <ClInclude Include="..\src\string_tests.h" />
-    <ClInclude Include="..\src\template_fprintf.h" />
+    <ClInclude Include="..\src\vtemplate_print.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\console_tests.cpp" />

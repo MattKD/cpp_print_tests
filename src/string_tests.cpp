@@ -1,206 +1,121 @@
-#include "string.h"
-#include "template_fprintf.h"
+#include "vtemplate_print.h"
 #include "print_tests.h"
-#include "KameUtil/print.h"
+#include "kame_util_fwd.h"
 #include <cstring>
 #include <sstream>
-
-//
-// String tests using a non-resizable array
-//
+#include <string>
 
 namespace {
 
-// Functor to pass sprintf to printfStyleTest
-// using a static buffer. Buffer should be big enough
-// for one call in printfSyleTest
-struct SprintfFunctor {
-  static const int buff_size = 1000;
-  char buff[buff_size];
+// For testing snprintf using a regular array with printfStyleTest.
+// This is simulating the case where the user knows the buffer is 
+// big enough or doesn't care about truncation.
+struct SprintfFwd {
+  SprintfFwd() : pos{0} { }
+
   template <typename... Args>
   void operator()(Args&& ...args)
   {
-    sprintf(buff, std::forward<Args>(args)...);
+    // reset to 0 when almost full for testing, since tests may be called
+    // 1000's of times.
+    if (buff_size - pos < 128) {
+      pos = 0;
+    }
+    int n = snprintf(buff+pos, buff_size, std::forward<Args>(args)...);
+    if (n > 0) {
+      pos += n;
+    }
   }
+
+  void flush() { } // need flush for tests
+
+  static const int buff_size = 4096;
+  char buff[buff_size];
+  int pos;
 };
 
-}
-
-double sprintfTest(size_t iterations)
-{
-  SprintfFunctor sf;
-  return printfStyleTest(sf, iterations);
-}
-
-namespace {
-
-// Stream object used by templateSprintfTest for testing the 
-// templated FPrintf with sprintf with a static buffer
-struct OutStringStream {
-  static const size_t buff_size = 4096;
-  size_t size;
-  char buff[buff_size];
-
-  OutStringStream() : size{0} {}
-
-  void checkSize(int needed) 
+// For testing snprintf and std::string append functions with the
+// variadic template and KameUtil-Print functions.
+struct SprintfStream {
+  SprintfStream& operator<<(char c) 
   { 
-    if (size + needed >= buff_size - 1) {
-      size = 0; 
-    }
-  }
-  OutStringStream& operator<<(char c) 
-  { 
-    buff[size++] = c; 
-    checkSize(0); 
-
+    str.push_back(c); 
     return *this; 
   }
-  OutStringStream& operator<<(int i) 
+
+  SprintfStream& operator<<(const char *s) 
   { 
-    const int tmp_buff_size = 100;
-    char tmp_buff[tmp_buff_size];
-    int n = sprintf(tmp_buff, "%d", i); 
-    checkSize(n);
-    strcpy(buff + size, tmp_buff);
-    size += n;
-    return *this; 
-  }
-  OutStringStream& operator<<(double d) 
-  { 
-    const int tmp_buff_size = 500;
-    char tmp_buff[tmp_buff_size];
-    int n = sprintf(tmp_buff, "%f", d); 
-    checkSize(n);
-    strcpy(buff + size, tmp_buff);
-    size += n;
-    return *this; 
-  }
-  OutStringStream& operator<<(const char *s) 
-  { 
-    while (*s) { 
-      operator<<(*s++);
-    }
-    return *this; 
-  }
-  OutStringStream& write(const char *s, int len) 
-  {
-    checkSize(len);
-    strncpy(buff + size, s, len);
-    size += len;
+    str.append(s); 
     return *this;
   }
-};
 
-}
-
-// Tests FPrintf using the sprintf style stream object OutStringStream
-double templateSprintfTest(size_t iterations)
-{
-  FPrintfFunctor<OutStringStream> fpf{OutStringStream{}};
-  return printfStyleTest(fpf, iterations);
-}
-
-//
-// String tests with resizable strings using the heap
-//
-
-namespace {
-
-// Functor to pass String to printfStyleTest
-struct StringSprintfFunctor {
-  String str;
-
-  template <typename... Args>
-  void operator()(Args&& ...args)
+  SprintfStream& operator<<(int n)
   {
-    str.sprintf(std::forward<Args>(args)...);
+    const int buff_size = 64;
+    char int_str[buff_size];
+    size_t int_str_len = snprintf(int_str, buff_size, "%d", n);
+    if (int_str_len > 0) {
+      str.append(int_str, int_str_len);
+    }
+    return *this;
   }
+
+  SprintfStream& operator<<(double d)
+  {
+    const int buff_size = 2048;
+    char dbl_str[buff_size];
+    size_t dbl_str_len = snprintf(dbl_str, buff_size, "%f", d);
+    if (dbl_str_len > 0) {
+      str.append(dbl_str, dbl_str_len);
+    }
+    return *this;
+  }
+
+  void flush() { } // need flush for tests
+
+  std::string str;
 };
 
-}
+} // end anon namespace
 
-// Tests String::sprintf
-double heapSprintfTest(size_t iterations)
+// Tests snprintf
+double snprintfTest(size_t iterations)
 {
-  StringSprintfFunctor ssf;
-  return printfStyleTest(ssf, iterations);
+  SprintfFwd func;
+  return printfStyleTest(func, iterations);
 }
 
 // Tests std::ostringstream
-double ostringstreamTest(size_t iterations)
+double stringstreamTest(size_t iterations)
 {
-  std::ostringstream ss;
+  std::stringstream ss;
   return cppStyleTest(ss, iterations);
 }
 
-namespace {
-
-// Stream object used by templateHeapSprintfTest for testing the 
-// templated FPrintf with String::sprintf
-struct OutHeapStringStream {
-  String str;
-
-  template <typename T>
-  OutHeapStringStream& operator<<(T val) 
-  { 
-    str.append(val);
-    return *this; 
-  }
-
-  OutHeapStringStream& write(const char *s, int len) 
-  {
-    str.append(s, len);
-    return *this;
-  }
-};
-
-}
-
-// Tests template FPrintf using String::sprintf with the stream 
-// object OutHeapStringStream
-double templateHeapSprintfTest(size_t iterations)
+// variadic template using string and snprintf
+double vtemplate_snprintfTest(size_t iterations)
 {
-  FPrintfFunctor<OutHeapStringStream> fpf{OutHeapStringStream{}};
-  return printfStyleTest(fpf, iterations);
+  auto func = VTemplatePrintFwd<SprintfStream>(SprintfStream());
+  return printfStyleTest(func, iterations);
 }
 
-
-namespace {
-
-template <class OStream>
-struct KameUtilSPrintFwd {
-  KameUtilSPrintFwd(OStream &os) : os{os} { }
-
-  template <class ...Args>
-  void operator()(Args &&...args)
-  {
-    KameUtil::streamPrint(os, std::forward<Args>(args)...);
-  }
-
-  OStream &os;
-};
-
+// variadic template using stringstream
+double vtemplate_sstreamTest(size_t iterations)
+{
+  auto func = VTemplatePrintFwd<std::stringstream>(std::stringstream());
+  return printfStyleTest(func, iterations);
 }
 
-// Tests KameUtil::print using std::stringstream
+// Tests KameUtil::streamPrint using stringstream
 double KameUtil_sstreamTest(size_t iterations)
 {
-  std::stringstream ss;
-  KameUtilSPrintFwd<std::ostream> func(ss); 
+  auto func = KameUtilPrintFwd<std::stringstream>(std::stringstream()); 
   return KameUtilPrintStyleTest(func, iterations);
 }
 
-double KameUtil_heapSprintfTest(size_t iterations)
+// Tests KameUtil::streamPrint using snprintf
+double KameUtil_snprintfTest(size_t iterations)
 {
-  OutHeapStringStream ss;
-  KameUtilSPrintFwd<OutHeapStringStream> func(ss); 
-  return KameUtilPrintStyleTest(func, iterations);
-}
-
-double KameUtil_bufferSprintfTest(size_t iterations)
-{
-  OutStringStream ss;
-  KameUtilSPrintFwd<OutStringStream> func(ss); 
+  auto func = KameUtilPrintFwd<SprintfStream>(SprintfStream());
   return KameUtilPrintStyleTest(func, iterations);
 }
