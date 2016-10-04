@@ -28,7 +28,8 @@ double printfStyleTest(PrintFunc &func, size_t iterations)
     func("hello number %d!\n", x);
     func("%d + %d = %d\n", x, y, x + y);
     func("hello %s! Are you %s today? Pos = (%d, %d)\n", str, str2, x, y);
-    func("%d%d%d%d%d%f%f\n", x, y, 3, 2, 1, a * b, a / b);
+    func("x = %d, y = %d, x*y = %d, a = %f, b = %f, a*b = %f, a/b = %f\n", 
+         x, y, x*y, a, b, a * b, a / b);
   }
 
   func.flush();
@@ -49,7 +50,9 @@ double cppStyleTest(OutStream &os, size_t iterations)
     os << x << " + " << y << " = " << x + y << "\n";
     os << "hello " << str << "! Are you " << str2 << " today? Pos = (" << x 
        << ", " << y << ")\n";
-    os << x << y << 3 << 2 << 1 << a * b << a / b << "\n";
+    os << "x = " << x << ", y = " << y << ", x*y = " << x*y 
+       << ", a = " << a << ", b = " << b << ", a*b = " << a * b 
+       << ", a/b = " << a / b << "\n";
   }
 
   os.flush();
@@ -69,7 +72,8 @@ double KameUtilPrintStyleTest(PrintFunc &func, size_t iterations)
     func("hello number {}!\n", x);
     func("{} + {} = {}\n", x, y, x + y);
     func("hello {}! Are you {} today? Pos = ({}, {})\n", str, str2, x, y);
-    func("{}{}{}{}{}{}{}\n", x, y, 3, 2, 1, a * b, a / b);
+    func("x = {}, y = {}, x*y = {}, a = {}, b = {}, a*b = {}, a/b = {}\n", 
+         x, y, x*y, a, b, a * b, a / b);
   }
 
   func.flush();
