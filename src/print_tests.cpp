@@ -129,11 +129,11 @@ int main(int argc, char *argv[])
     if (console_test_iters > 0) {
       for (auto &test : console_tests) {
         print("\n{} test\n", test.test_name);
-        fflush(stdout);
+        std::cout.flush();
         std::chrono::milliseconds ms(1500);
         std::this_thread::sleep_for(ms);
         test.run();
-        fflush(stdout);
+        std::cout.flush();
         std::cout.flush();
       }
     }
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
     if (file_test_iters > 0) { 
       for (auto &test : file_tests) {
         print("\n{} test\n", test.test_name);
-        fflush(stdout);
+        std::cout.flush();
         test.run();
       }
     }
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
     if (string_test_iters > 0) {
       for (auto &test : string_tests) {
         print("\n{} test\n", test.test_name);
-        fflush(stdout);
+        std::cout.flush();
         test.run();
       }
     }
