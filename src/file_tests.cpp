@@ -121,22 +121,23 @@ struct BufferedOutStream {
 
   void flush() { write(); os.flush(); }
 
-  void append(const char *s, size_t len)
+  void checkSize(int needed) 
   {
-    while (buffer_size + len > buffer_max_size) {
-      size_t cpy_amount = buffer_max_size - buffer_size;
-      strncpy(buffer.get() + buffer_size, s, cpy_amount);
+    if (buffer_size + needed > buffer_max_size) {
       write();
-      s += cpy_amount;
-      len -= cpy_amount;
     }
-
-    strncpy(buffer.get()+buffer_size, s, len);
   }
 
   BufferedOutStream& operator<<(const char *str)
   {
-    append(str, strlen(str));
+    char c = *str;
+    while (c != '\0') {
+      if (buffer_size == buffer_max_size) {
+        write();
+      }
+      buffer[buffer_size++] = c;
+      c = *++str;
+    }
     return *this;
   }
 
@@ -145,7 +146,7 @@ struct BufferedOutStream {
     if (buffer_size == buffer_max_size) {
       write();
     }
-    buffer.get()[buffer_size++] = c;
+    buffer[buffer_size++] = c;
     return *this;
   }
 
@@ -154,7 +155,9 @@ struct BufferedOutStream {
     const int max_int_size = 64;
     char int_str[max_int_size];
     int n = snprintf(int_str, max_int_size, "%d", i);
-    append(int_str, n);
+    checkSize(n);
+    memcpy(buffer.get()+buffer_size, int_str, n);
+    buffer_size += n;
     return *this;
   }
 
@@ -163,7 +166,9 @@ struct BufferedOutStream {
     const int dbl_str_size = 2048;
     char dbl_str[dbl_str_size];
     int n = snprintf(dbl_str, dbl_str_size, "%f", d);
-    append(dbl_str, n);
+    checkSize(n);
+    memcpy(buffer.get()+buffer_size, dbl_str, n);
+    buffer_size += n;
     return *this;
   }
 
@@ -225,28 +230,24 @@ struct BufferedBinaryOutStream {
 
   void flush() { write(); os.flush(); }
 
-  void append(const char *s, size_t len)
-  {
-    while (buffer_size + len > buffer_max_size) {
-      size_t cpy_amount = buffer_max_size - buffer_size;
-      memcpy(buffer.get() + buffer_size, s, cpy_amount);
-      write();
-      s += cpy_amount;
-      len -= cpy_amount;
-    }
-
-    memcpy(buffer.get()+buffer_size, s, len);
-  }
-
   BufferedBinaryOutStream& operator<<(const char *str)
   {
-    append(str, strlen(str));
+    char c = *str;
+    while (c != '\0') {
+      if (buffer_size == buffer_max_size) {
+        write();
+      }
+      buffer[buffer_size++] = c;
+      c = *++str;
+    }
     return *this;
   }
 
   BufferedBinaryOutStream& operator<<(char c)
   {
-    checkSize(1);
+    if (buffer_size == buffer_max_size) {
+      write();
+    }
     buffer[buffer_size++] = c;
     return *this;
   }
